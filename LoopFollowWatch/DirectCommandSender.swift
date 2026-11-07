@@ -83,7 +83,7 @@ enum DirectCommandSender {
         do {
             let message = try EncryptedPushMessage(encryptedData: messenger.encrypt(payload), commandType: payload.commandType)
             let body = try JSONEncoder().encode(message)
-            return await deliver(body: body, remote: remote, expiration: "600", collapseID: payload.apnsCollapseID)
+            return await deliver(body: body, remote: remote, expiration: "600", collapseID: payload.apnsCollapseID, pushType: .background)
         } catch {
             return (false, "Failed to encode or encrypt push message: \(error.localizedDescription)")
         }
@@ -152,7 +152,13 @@ enum DirectCommandSender {
         return otp == UserDefaults.standard.string(forKey: lastLoopOTPKey) ? nil : otp
     }
 
-    private static func deliver(body: Data, remote: WatchCredentials.Remote, expiration: String? = nil, collapseID: String? = nil) async -> (Bool, String?) {
+    private static func deliver(
+        body: Data,
+        remote: WatchCredentials.Remote,
+        expiration: String? = nil,
+        collapseID: String? = nil,
+        pushType: APNSDelivery.PushType = .alert
+    ) async -> (Bool, String?) {
         await withCheckedContinuation { continuation in
             APNSDelivery.send(
                 body: body,
@@ -163,7 +169,8 @@ enum DirectCommandSender {
                 teamId: remote.teamID,
                 apnsKey: remote.apnsKey,
                 expiration: expiration,
-                collapseID: collapseID
+                collapseID: collapseID,
+                pushType: pushType
             ) { success, error in
                 continuation.resume(returning: (success, error))
             }

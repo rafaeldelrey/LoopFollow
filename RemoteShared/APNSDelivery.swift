@@ -6,6 +6,28 @@ import Foundation
 /// Sends one remote command push to the Loop or Trio app. Used by the phone and
 /// by the watch when it sends without the phone.
 enum APNSDelivery {
+    /// Trio commands go out as background pushes: iOS drops alert pushes for an app
+    /// that has no notification permission, and background pushes are delivered regardless.
+    enum PushType {
+        case alert
+        case background
+
+        var headerValue: String {
+            switch self {
+            case .alert: "alert"
+            case .background: "background"
+            }
+        }
+
+        /// APNs rejects priority 10 for background pushes.
+        var priority: String {
+            switch self {
+            case .alert: "10"
+            case .background: "5"
+            }
+        }
+    }
+
     /// Calls `completion` on an arbitrary queue with success, or the reason for failure.
     static func send(
         body: Data,
@@ -17,6 +39,7 @@ enum APNSDelivery {
         apnsKey: String,
         expiration: String? = nil,
         collapseID: String? = nil,
+        pushType: PushType = .alert,
         completion: @escaping (Bool, String?) -> Void
     ) {
         guard let jwt = JWTManager.shared.getOrGenerateJWT(keyId: keyId, teamId: teamId, apnsKey: apnsKey) else {
@@ -37,9 +60,9 @@ enum APNSDelivery {
         request.httpMethod = "POST"
         request.setValue("bearer \(jwt)", forHTTPHeaderField: "authorization")
         request.setValue("application/json", forHTTPHeaderField: "content-type")
-        request.setValue("10", forHTTPHeaderField: "apns-priority")
+        request.setValue(pushType.priority, forHTTPHeaderField: "apns-priority")
         request.setValue(topic, forHTTPHeaderField: "apns-topic")
-        request.setValue("alert", forHTTPHeaderField: "apns-push-type")
+        request.setValue(pushType.headerValue, forHTTPHeaderField: "apns-push-type")
         if let expiration {
             request.setValue(expiration, forHTTPHeaderField: "apns-expiration")
         }

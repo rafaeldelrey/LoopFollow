@@ -271,6 +271,7 @@ class PushNotificationManager {
                 apnsKey: apnsKey,
                 expiration: "600",
                 collapseID: payload.apnsCollapseID,
+                pushType: .background,
                 completion: completion
             )
         } catch {

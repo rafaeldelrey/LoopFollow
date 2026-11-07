@@ -7,20 +7,17 @@ struct EncryptedPushMessage: Encodable {
     let aps: APSPayload
     let encryptedData: String
 
-    init(encryptedData: String, commandType: TRCCommandType) {
+    init(encryptedData: String, commandType _: TRCCommandType) {
         self.encryptedData = encryptedData
-        aps = APSPayload(alert: "Remote Command: \(commandType.displayName)")
+        aps = APSPayload()
     }
 
+    /// Sent as a background push (see `APNSDelivery.PushType`), so no alert fields.
     struct APSPayload: Encodable {
         let contentAvailable: Int = 1
-        let interruptionLevel: String = "time-sensitive"
-        let alert: String
 
         enum CodingKeys: String, CodingKey {
             case contentAvailable = "content-available"
-            case interruptionLevel = "interruption-level"
-            case alert
         }
     }
 
